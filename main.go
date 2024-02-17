@@ -27,8 +27,14 @@ type WeatherAPIResponse struct {
 	} `json:"current"`
 }
 
-func main() {
+func setupRouter() *mux.Router {
 	r := mux.NewRouter()
+	r.HandleFunc("/{cep}", weatherHandler)
+	return r
+}
+
+func main() {
+	r := setupRouter()
 
 	r.HandleFunc("/{cep}", weatherHandler)
 
