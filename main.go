@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
+	"strconv"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
@@ -36,8 +39,6 @@ func setupRouter() *mux.Router {
 func main() {
 	r := setupRouter()
 
-	r.HandleFunc("/{cep}", weatherHandler)
-
 	http.Handle("/", r)
 
 	fmt.Println("Servidor rodando na porta 8080")
@@ -45,6 +46,9 @@ func main() {
 }
 
 func weatherHandler(w http.ResponseWriter, r *http.Request) {
+	var wg sync.WaitGroup
+	var viaCEPResponse ViaCEPResponse
+	var weatherAPIResponse WeatherAPIResponse
 
 	vars := mux.Vars(r)
 	cep := vars["cep"]
@@ -55,49 +59,84 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Get("https://viacep.com.br/ws/" + cep + "/json/")
-	if err != nil {
-		http.Error(w, "can not find zipcode", http.StatusNotFound)
-		return
-	}
-	defer resp.Body.Close()
+	errc := make(chan error, 1)
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		resp, err := http.Get("https://viacep.com.br/ws/" + cep + "/json/")
+		if err != nil {
+			errc <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errc <- err
+			return
+		}
+
+		err = json.Unmarshal(body, &viaCEPResponse)
+		if err != nil || viaCEPResponse.Erro {
+			errc <- err
+			return
+		}
+	}()
+
+	wg.Wait()
+
+	select {
+	case err := <-errc:
 		http.Error(w, "can not find zipcode", http.StatusNotFound)
+		log.Println(err)
 		return
+	default:
 	}
 
-	var viaCEPResponse ViaCEPResponse
-	err = json.Unmarshal(body, &viaCEPResponse)
-	if err != nil || viaCEPResponse.Erro {
-		http.Error(w, "can not find zipcode", http.StatusNotFound)
-		return
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		resp, err := http.Get("http://api.weatherapi.com/v1/current.json?key=3841b81037a5427eb51191826241702&q=" + viaCEPResponse.Localidade)
+		if err != nil {
+			errc <- err
+			return
+		}
+		defer resp.Body.Close()
 
-	resp, err = http.Get("http://api.weatherapi.com/v1/current.json?key=3841b81037a5427eb51191826241702&q=" + viaCEPResponse.Localidade)
-	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errc <- err
+			return
+		}
+
+		err = json.Unmarshal(body, &weatherAPIResponse)
+		if err != nil {
+			errc <- err
+			return
+		}
+	}()
+
+	wg.Wait()
+
+	select {
+	case err := <-errc:
+		log.Println(err)
 		http.Error(w, "can not find weather", http.StatusInternalServerError)
 		return
+	default:
 	}
-	defer resp.Body.Close()
 
-	body, err = ioutil.ReadAll(resp.Body)
+	tempC, err := strconv.ParseFloat(fmt.Sprintf("%.1f", weatherAPIResponse.Current.TempC), 64)
+
+	tempF, err := strconv.ParseFloat(fmt.Sprintf("%.1f", tempC*1.8+32), 64)
+
+	tempK, err := strconv.ParseFloat(fmt.Sprintf("%.1f", tempC+273.15), 64)
+
 	if err != nil {
-		http.Error(w, "can not find weather", http.StatusInternalServerError)
+		http.Error(w, "can not parse temperature", http.StatusInternalServerError)
 		return
 	}
-
-	var weatherAPIResponse WeatherAPIResponse
-	err = json.Unmarshal(body, &weatherAPIResponse)
-	if err != nil {
-		http.Error(w, "can not find weather", http.StatusInternalServerError)
-		return
-	}
-
-	tempC := weatherAPIResponse.Current.TempC
-	tempF := tempC*1.8 + 32
-	tempK := tempC + 273.15
 
 	// Crie a resposta
 	weather := Weather{TempC: tempC, TempF: tempF, TempK: tempK}
