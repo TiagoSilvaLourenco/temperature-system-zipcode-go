@@ -64,7 +64,7 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		resp, err := http.Get("https://viacep.com.br/ws/" + cep + "/json/")
+		resp, err := http.Get("http://viacep.com.br/ws/" + cep + "/json/")
 		if err != nil {
 			errc <- err
 			return
