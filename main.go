@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"sync"
@@ -41,7 +42,7 @@ func main() {
 
 	http.Handle("/", r)
 
-	fmt.Println("Servidor rodando na porta 8080")
+	fmt.Println("Servidor rodando na porta 8080 url: http://localhost:8080/01001000")
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -77,11 +78,17 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if len(body) == 0 {
+			errc <- fmt.Errorf("empty response from API")
+			return
+		}
+
 		err = json.Unmarshal(body, &viaCEPResponse)
 		if err != nil || viaCEPResponse.Erro {
 			errc <- err
 			return
 		}
+
 	}()
 
 	wg.Wait()
@@ -97,7 +104,12 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		resp, err := http.Get("http://api.weatherapi.com/v1/current.json?key=3841b81037a5427eb51191826241702&q=" + viaCEPResponse.Localidade)
+
+		cityEscaped := url.QueryEscape(viaCEPResponse.Localidade)
+
+		url := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?q=%s&key=3841b81037a5427eb51191826241702", cityEscaped)
+
+		resp, err := http.Get(url)
 		if err != nil {
 			errc <- err
 			return
@@ -110,11 +122,17 @@ func weatherHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if len(body) == 0 {
+			errc <- fmt.Errorf("empty response from API")
+			return
+		}
+
 		err = json.Unmarshal(body, &weatherAPIResponse)
 		if err != nil {
 			errc <- err
 			return
 		}
+
 	}()
 
 	wg.Wait()
