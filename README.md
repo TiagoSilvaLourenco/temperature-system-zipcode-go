@@ -4,15 +4,21 @@
 
 - This program works getting temperature in Celsius, Fahrenheit and Kelvin from a zipcode, return in json format.
 
-- It follow the format returned by the API: {"tempC":26,"tempF":78.8,"tempK":299.1}
+- The following the format returned by the API: {"tempC":26,"tempF":78.8,"tempK":299.1}
 
 - Where tempc is temperature in Celsius, tempF is temperature in Fahrenheit and tempK is temperature in Kelvin.
 
 ## How to test
 
+- git clone project: `git clone git@github.com:TiagoSilvaLourenco/temperature-system-zipcode-go.git`
+
 - In local machine run `go run main.go` to run the program in the port 8080
 
 - In local machine run `go test` to test the program
+
+- For test in production go to: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/{cep}}
+
+- Where {cep} is the zipcode number you want to get the temperature scales, eg.: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/01001000
 
 <!-- https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/29166650 -->
 
