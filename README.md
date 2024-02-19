@@ -12,15 +12,15 @@
 
 - git clone project: `git clone git@github.com:TiagoSilvaLourenco/temperature-system-zipcode-go.git`
 
-- In local machine run `go run main.go` to run the program in the port 8080
+- In development mode run `docker compose up` to run the program in the port 8080
 
 - In local machine run `go test` to test the program
 
-- For test in production go to: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/{cep}}
+- For run the program in production run command: `docker-compose -f docker-compose.prod.yml up`
+
+- To test the program online, go to: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/{cep}}
 
 - Where {cep} is the zipcode number you want to get the temperature scales, eg.: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/01001000
-
-<!-- https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/29166650 -->
 
 <!--
     Objetivo: Desenvolver um sistema em Go que receba um CEP, identifica a cidade e retorna o clima atual (temperatura em graus celsius, fahrenheit e kelvin). Esse sistema deverá ser publicado no Google Cloud Run.
