@@ -14,9 +14,9 @@
 
 - In development mode run `docker compose up` to run the program in the port 8080
 
-- In local machine run `go test` to test the program
+- For run the program in production run command: `docker compose -f docker-compose.prod.yml up`
 
-- For run the program in production run command: `docker-compose -f docker-compose.prod.yml up`
+- In local machine run `go test` to test the program
 
 - To test the program online, go to: https://temperature-system-goexpert-n5ko4ubijq-uc.a.run.app/{cep}}
 
